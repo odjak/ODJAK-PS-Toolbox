@@ -2,13 +2,23 @@
 # Compress-ArchFilesOlderThan -source "C:\Logs" -destination "D:\Archives\Archive.zip" -olderThan "2018-01-01"
 function main{
     begin{
-        # Verify the powerhshell archive module is available
+        # - Process the script block before any input objects are processed
         if (-not (Get-Module -Name Microsoft.PowerShell.Archive -ListAvailable)) {
+            # . Install the Microsoft.PowerShell.Archive module if it is not available
             Write-Host "The Microsoft.PowerShell.Archive module is not available. Attempting to install it..." -ForegroundColor Yellow
             Install-Module -Name Microsoft.PowerShell.Archive -Force -AllowClobber -Scope CurrentUser -ErrorAction SilentlyContinue
         }
         # Import the module
-        Import-Module -Name Microsoft.PowerShell.Archive -ErrorAction SilentlyContinue
+        try {
+            # - Import the Microsoft.PowerShell.Archive module if it is not already loaded
+            Import-Module -Name Microsoft.PowerShell.Archive -ErrorAction SilentlyContinue
+        }
+        catch {
+            # - Error importing the module - exit the script.
+            Write-Host "Error importing the Microsoft.PowerShell.Archive module." -ForegroundColor Red
+            break
+        }
+
         # - Load the System.IO.Compression.FileSystem assembly if it is not already loaded
         if (-not ([System.Management.Automation.PSTypeName]'System.IO.Compression.FileSystem').Type) {
             Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -29,7 +39,6 @@ function main{
         Compress-7ZipFilesOlderThan -source $source -destination $destination -olderThan $olderThan
         Compress-ArchFilesOlderThan -source $source -destination "$destination\Archive.zip" -olderThan $olderThan
     }
-    }
     end {
         # - Process the script block after all input objects have been processed
         Remove-Module -Name Microsoft.PowerShell.Archive -Force -ErrorAction SilentlyContinue
@@ -37,7 +46,8 @@ function main{
         Write-Host "Script completed." -ForegroundColor Green -BackgroundColor Black
 
     }
-    # Uncomment main in bottom to run the script - Dont forgeet to change the source and destination paths as well as the olderThan date.
+    # - Uncomment main in bottom to run the script - Dont forgeet to change the source and destination paths as well as the olderThan date.
+}
 
 function Compress-7ZipFilesOlderThan {
     <#
@@ -121,4 +131,4 @@ function Compress-ArchFilesOlderThan{
     }
     $arch.Dispose()
 }
-main
+# main
