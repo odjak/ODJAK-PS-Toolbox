@@ -1,0 +1,310 @@
+# Atlassian MCP Gateway - capability policy (POC)
+# Source: support.atlassian.com/atlassian-ai-gateway/docs/supported-tools/ (read 2026-11-18)
+# Entra app role (gateway) == one Atlassian MCP permission group == one Atlassian OAuth scope.
+# Tool names are verbatim (case-sensitive). Unlisted tools are DENIED.
+#
+# IMPORTANT (v2): the default endpoint exposes Primary tools + meta-tools
+#   discover / executeRead / executeWrite / executeDestructive.
+# The broker must either
+#   (a) connect upstream with https://mcp.atlassian.com/v2/mcp?tools=all (flat list) and hide the meta-tools, or
+#   (b) inspect the inner tool name inside execute* arguments and apply the same policy.
+# (a) is simpler and recommended for the POC.
+
+entra:
+  audience: <gwAppId>
+  allowedBlueprints: [ed3dafa1-ffe5-4a14-a63a-8176cb3e86de]
+
+upstream:
+  url: https://mcp.atlassian.com/v2/mcp?tools=all
+  hideTools: [discover, executeRead, executeWrite, executeDestructive]
+
+# Delegated scope (scp, inherited via blueprint) -> which app roles it may unlock in OBO
+delegatedScopeGate:
+  Atlassian.Read:   [Jira.Read, Jira.Search, Confluence.Read, Confluence.Search, Jsm.Read, Bitbucket.Read,
+                     TeamworkGraph.Read, Rovo.Search, Code.Search, Assets.Read, Loom.Read, Goals.Read,
+                     Projects.Read, Teams.Read, Focus.Read, Talent.Read, CapacityPlanning.Read,
+                     JiraAlign.Read, Insights.Read]
+  Atlassian.Write:  [Jira.Write, Confluence.Write, Jsm.Write, Bitbucket.Write, TeamworkGraph.Write, Loom.Write,
+                     Goals.Write, Projects.Write, Teams.Write, Focus.Write, Talent.Write,
+                     CapacityPlanning.Write, JiraAlign.Write]
+  Atlassian.Delete: [Jira.Delete, Jira.Manage]
+
+# Always allowed for any authenticated caller (no data access on their own)
+common: [atlassianUserInfo, getAccessibleAtlassianResources, getContentFormatGuide]
+
+capabilities:
+  # ---------------- Jira ----------------
+  Jira.Read:            # read:jira:agent-interface
+    - getJiraIssue
+    - listJiraProjects
+    - listJiraProjectIssueTypesMetadata
+    - getJiraIssueTypeMetaWithFields
+    - listJiraIssueTransitions
+    - listJiraIssueLinkTypes
+    - listJiraIssueRemoteIssueLinks
+    - listJiraIssueWorklogs
+    - lookupJiraAccountId
+    - listJiraIssueAssignableUsers
+    - listJiraIssueComments
+    - listJiraIssueChangelogs
+    - getJiraCurrentUser
+    - getJiraUser
+    - listJiraStatuses
+    - listJiraProjectComponents
+    - getJiraProjectVersions
+    - getJiraProjectVersionRelatedWork
+    - listJiraBoards
+    - getJiraBoardConfig
+    - getJiraBoardIssueData
+    - getJiraBoardSprintData
+    - listJiraBoardSprints
+    - listJiraFilters
+    - listJiraDashboards
+    - getJiraEntityProperty
+    - downloadJiraIssueAttachment
+  Jira.Search:          # search:jira:agent-interface
+    - searchJiraIssuesUsingJql
+  Jira.Write:           # write:jira:agent-interface
+    - createJiraIssue
+    - editJiraIssue
+    - transitionJiraIssue
+    - addOrEditJiraIssueComment
+    - addOrEditJiraIssueWorklog
+    - createJiraIssueLink
+    - manageJiraProjectVersion
+    - manageJiraProjectVersionRelatedWork
+    - manageJiraSprint
+    - createJiraBoard
+    - watchJiraIssue
+    - uploadAttachmentToJiraIssue
+    - editJiraEntityProperty
+    - createJiraIssueRemoteIssueLink
+    - convertJiraIssueHierarchy
+  Jira.Delete:          # delete:jira:agent-interface  (disabled by default at Atlassian)
+    - deleteJiraIssue
+    - deleteJiraComment
+    - deleteJiraIssueAttachment
+  Jira.Manage:          # manage:jira:agent-interface  (disabled by default at Atlassian)
+    - createJiraProject
+    - updateJiraProject
+    - getJiraWorkflows
+    - getJiraWorkflowEditorLink
+    - getJiraScreen
+    - updateJiraScreen
+
+  # ---------------- Confluence ----------------
+  Confluence.Read:      # read:confluence:agent-interface
+    - getConfluenceContent
+    - listConfluenceContent
+    - listConfluenceSpaces
+    - getConfluenceSpace
+    - getConfluenceSpaceInstructions
+    - getConfluencePersonalSpace
+    - listConfluenceComments
+    - getConfluenceComment
+    - getConfluenceContentSuggestions
+    - listConfluenceContentVersions
+    - getConfluenceContentVersion
+    - diffConfluenceContentVersions
+    - listConfluenceAttachments
+    - getConfluenceAttachment
+    - downloadConfluenceAttachment
+    - exportConfluenceContent
+    - getConfluenceContentPermissions
+    - getConfluenceContentRestrictionState
+    - getConfluencePublicLinkStatus
+    - getConfluenceReactions
+    - getConfluenceTask
+    - listConfluenceTasks
+    - listConfluenceTemplates
+    - getConfluenceTemplate
+    - resolveConfluenceContentMacros
+    - getConfluenceMauiApp
+  Confluence.Search:    # search:confluence:agent-interface
+    - searchConfluence
+  Confluence.Write:     # write:confluence:agent-interface
+    - createConfluenceContent
+    - updateConfluenceContent
+    - createConfluenceSpace
+    - setConfluenceSpaceInstructions
+    - copyConfluenceContent
+    - moveConfluenceContent
+    - archiveConfluenceContent
+    - unarchiveConfluenceContent
+    - restoreConfluenceContentVersion
+    - convertConfluenceContentMode
+    - setConfluenceContentStatus
+    - createConfluenceComment
+    - updateConfluenceComment
+    - updateConfluenceCommentResolution
+    - addConfluenceContentSuggestions
+    - createConfluenceAttachment
+    - addLabelsToConfluenceContent
+    - addConfluenceReaction
+    - completeConfluenceTask
+    - reopenConfluenceTask
+    - starConfluenceContent
+    - unstarConfluenceContent
+    - starConfluenceSpace
+    - unstarConfluenceSpace
+    - watchConfluenceContent
+    - unwatchConfluenceContent
+    - watchConfluenceSpace
+    - unwatchConfluenceSpace
+    - watchConfluenceLabel
+    - unwatchConfluenceLabel
+    # beta + Enriched (Rovo credits once GA) - enable deliberately:
+    # - createConfluenceInfographicForPage
+    # - editConfluenceInfographicForPage
+    # - createConfluenceMauiApp
+    # - editConfluenceMauiApp
+  Confluence.Share:     # POC split: permission / public-link changes kept apart from normal writes (same Atlassian scope: write:confluence)
+    - addConfluenceContentPermissions
+    - removeConfluenceContentPermissions
+    - replaceConfluenceContentPermissions
+    - setConfluenceContentRestrictionState
+    - enableConfluencePublicLink
+    - disableConfluencePublicLink
+
+  # ---------------- Jira Service Management ----------------
+  Jsm.Read:             # read:jsm:agent-interface (some also need read:jira:agent-interface)
+    - getJsmOpsAlerts
+    - getJsmOpsScheduleInfo
+    - getJsmOpsTeamInfo
+    - getJsmRequestResolverPlans      # + Jira.Read
+    - searchJsmRequests               # + Jira.Read
+    - getJsmRequest
+    - getJsmRequestActionMetadata
+    - getJsmRequestCreationOptions
+    - getJsmRequestTypeFields
+    - getJsmAgentAvailability
+  Jsm.Write:            # write:jsm:agent-interface
+    - updateJsmOpsAlert               # + Jsm.Read
+    - approveJsmRequestResolverPlans  # + Jira.Read
+    - transitionJsmRequest
+    - createJsmRequest
+    - decideJsmRequestApproval
+    - setJsmAgentAvailability
+
+  # ---------------- Bitbucket Cloud (workspace must be linked to the org) ----------------
+  Bitbucket.Read:       # read:bitbucket:agent-interface
+    - listBitbucketWorkspaces
+    - getBitbucketWorkspace
+    - listBitbucketRepositories
+    - getBitbucketRepository
+    - getBitbucketRepoDefaultReviewers
+    - getBitbucketRepoFileContent
+    - getBitbucketRepoBranch
+    - getBitbucketRepoCommit
+    - listBitbucketRepoCommitReports
+    - getBitbucketRepoCommitReport
+    - getBitbucketRepoCommitReportAnnotations
+    - listBitbucketRepoPullRequests
+    - getBitbucketRepoPullRequest
+    - getBitbucketRepoPullRequestDiff
+    - listBitbucketRepoPullRequestComments
+    - listBitbucketRepoPullRequestTasks
+    - listBitbucketRepoPipelines
+    - getBitbucketRepoPipeline
+    - listBitbucketRepoPipelineSteps
+    - getBitbucketRepoPipelineStep
+    - getBitbucketRepoPipelineStepLog
+    - listBitbucketRepoDeployments
+    - getBitbucketRepoDeployment
+    - listBitbucketRepoEnvironments
+    - getBitbucketRepoEnvironment
+  Bitbucket.Write:      # write:bitbucket:agent-interface
+    - createBitbucketRepoPullRequest
+    - updateBitbucketRepoPullRequest
+    - mergeBitbucketRepoPullRequest
+    - approveBitbucketRepoPullRequest
+    - requestChangesOnBitbucketRepoPullRequest
+    - addBitbucketRepoPullRequestComment
+    - resolveBitbucketRepoPullRequestComment
+    - reopenBitbucketRepoPullRequestComment
+    - createBitbucketRepoPullRequestTask
+    - setBitbucketRepoPullRequestTaskState
+    - createBitbucketRepoBranch
+    - createBitbucketRepoCommit
+    - runBitbucketRepoPipeline
+
+  # ---------------- Platform: Teamwork Graph / search / code ----------------
+  TeamworkGraph.Read:   # read:all:twg  (Enriched tools use Rovo credits)
+    - getTeamworkGraphContext         # Enriched
+    - getTeamworkGraphObject
+    - getPeopleInfo                   # beta, Enriched
+    - getWorkPortfolio                # beta, Enriched
+    - getWorkActivity                 # beta, Enriched
+    - getPullRequests                 # beta, Enriched
+    - getCollaborators                # beta, Enriched
+  TeamworkGraph.Write:  # write:all:twg
+    - addTeamworkGraphContext
+  Rovo.Search:          # search:rovo:agent-interface  (beta, Enriched)
+    - search
+  Code.Search:          # search:code:agent-interface  (OAuth only, beta)
+    - searchCode                      # Enriched
+    - getCodeFile
+    - listCodeDirectory
+    - scanCodeRepo
+    - getCodeSymbol
+    - diffCodeSymbols
+
+  # ---------------- Other products ----------------
+  Assets.Read:          # read:assets:agent-interface
+    - getAssetsObject
+    - getAssetsObjectsById
+    - getAssetsObjectSchema
+    - getAssetsObjectType
+    - getAssetsServiceObjectsById
+    - listAssetsObjectSchemas
+    - listAssetsObjectTypeAttributes
+    - queryAssetsObjects
+    - queryAssetsObjectSchemaAttributes
+    - queryAssetsObjectsUsingAql
+    - queryAssetsObjectTypes
+    - queryAssetsReferenceTypes
+    - searchAssetsObjects
+  Loom.Read:            # read:loom:agent-interface
+    - getLoomObjectsContent
+    - listLoomObjects
+    - getLoomVideoDownloadUrl
+    - listLoomObjectFolders
+  Loom.Write:           # write:loom:agent-interface
+    - createLoomObjectUpload
+    - publishLoomObject
+    - updateLoomObjectMetadata
+    - updateLoomObjectVisibility
+    - shareLoomObject
+    - addLoomInteraction
+    - createLoomObjectFolder
+    - moveLoomObjectToFolder
+    - recoverLoomVideo
+  Goals.Read:           [searchGoals, getGoal, getGoalUpdate, getGoalTypes]                       # read:goals:agent-interface
+  Goals.Write:          [createGoal, createGoalUpdate, addConnectionsToGoals]                     # write:goals:agent-interface
+  Projects.Read:        [searchProjects, getProject, getProjectUpdate]                            # read:projects:agent-interface
+  Projects.Write:       [createProject, createProjectUpdate, addConnectionsToProjects]            # write:projects:agent-interface
+  Teams.Read:           [searchTeams, getTeam]                                                    # read:teams:agent-interface   (OAuth only)
+  Teams.Write:          [createTeam, updateTeam]                                                  # write:teams:agent-interface  (OAuth only)
+  Focus.Read:           [searchFocusAreas, getFocusArea, getFocusAreaTypes, getFocusAreaCustomFields]  # read:focus:agent-interface
+  Focus.Write:          [createFocusArea, updateFocusArea, createFocusAreaStatusUpdate, linkToFocusArea] # write:focus:agent-interface
+  Talent.Read:          [getTalentUser, getTalentFields, searchTalentPositions, getTalentPosition,
+                         getTalentPositionsByEntity, getTalentGroupMetrics, searchTalentSkillTaxonomy] # read:talent:agent-interface
+  Talent.Write:         [createTalentSkill, updateTalentWorkerSkillMappings, updateTalentPositionFocusAreaMappings] # write:talent:agent-interface
+  CapacityPlanning.Read:  [getCapacityPlanAllocations, searchCapacityPlanNonProjectWork]          # read:capacity-planning:agent-interface
+  CapacityPlanning.Write: [updateCapacityPlanAllocation, createCapacityPlanNonProjectWork, updateCapacityPlanNonProjectWork] # write:capacity-planning:agent-interface
+  JiraAlign.Read:       [getJiraAlignTerminology, describeJiraAlignItemType, getJiraAlignItem, listJiraAlignItems] # read:jira-align:agent-interface (OAuth only)
+  JiraAlign.Write:      [createJiraAlignItem, updateJiraAlignItem]                                # write:jira-align:agent-interface (OAuth only)
+  Insights.Read:        [searchInsightsResources, getInsightsResource, getInsightsResourceLineage,
+                         queryInsightsSql, queryInsightsAi]                                       # read:insights:agent-interface (OAuth only)
+
+# Backend credential selection (autonomous). Each Atlassian service-account key must carry
+# the matching *:agent-interface scopes. Roles marked OAuth-only can never be served app-only.
+backend:
+  appOnly:
+    - roles: [Jira.Read, Jira.Search, Confluence.Read, Confluence.Search, Rovo.Search]
+      secret: kv://atl-svc-read
+    - roles: [Jira.Write, Confluence.Write]
+      secret: kv://atl-svc-write
+  onBehalfOf:
+    tokenStore: kv-or-db             # Atlassian refresh token per (tid, userOid, agentAppId)
+    requestScopes: derived           # union of atlassianScope for the caller's effective roles + offline_access read:me
